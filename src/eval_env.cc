@@ -12,11 +12,32 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <algorithm>
 #include <assert.h>
+#include <stdlib.h>
 
 #include "eval_env.h"
 
 using namespace std;
+
+namespace {
+
+/// Return true if \a input starts with \a needle.
+bool StartsWith(const string& input, const string& needle) {
+  return (input.size() >= needle.size() &&
+          equal(needle.begin(), needle.end(), input.begin()));
+}
+
+string Trim(const string& input) {
+  const char* whitespace_chars = " \t\n\r\v\f";
+    size_t first = input.find_first_not_of(whitespace_chars);
+    if (first == string::npos)
+        return "";
+    size_t last = input.find_last_not_of(whitespace_chars);
+    return input.substr(first, last - first + 1);
+}
+
+}  // anonymous namespace
 
 string BindingEnv::LookupVariable(const string& var) {
   map<string, string>::iterator i = bindings_.find(var);
@@ -24,6 +45,9 @@ string BindingEnv::LookupVariable(const string& var) {
     return i->second;
   if (parent_)
     return parent_->LookupVariable(var);
+  if (StartsWith(var, "NINJA_")) {
+    return Trim(getenv(var.c_str()));
+  }
   return "";
 }
 
